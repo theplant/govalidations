@@ -69,7 +69,7 @@ func AvoidScriptTag(vg ValueGetter, name string, message string) Validator {
 	return Custom(func(object interface{}) bool {
 		value := vg(object).(string)
 		if strings.Contains(strings.ToLower(value), `<script>`) ||
-			strings.Contains(strings.ToLower(value), `\<script>`) {
+			strings.Contains(strings.ToLower(value), `</script>`) {
 			return false
 		}
 		return true
