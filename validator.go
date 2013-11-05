@@ -65,12 +65,24 @@ func Prohibition(vg ValueGetter, min int, max int, name string, message string) 
 	}, name, message)
 }
 
+var forbiddenStrings []string = []string{
+	`<script>`,
+	`</script>`,
+	`<style>`,
+	`</style>`,
+	`<img>`,
+	`</img>`,
+	`<embed>`,
+	`</embed>`,
+}
+
 func AvoidScriptTag(vg ValueGetter, name string, message string) Validator {
 	return Custom(func(object interface{}) bool {
 		value := vg(object).(string)
-		if strings.Contains(strings.ToLower(value), `<script>`) ||
-			strings.Contains(strings.ToLower(value), `</script>`) {
-			return false
+		for _, str := range forbiddenStrings {
+			if strings.Contains(strings.ToLower(value), str) {
+				return false
+			}
 		}
 		return true
 	}, name, message)
