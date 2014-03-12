@@ -80,7 +80,7 @@ var forbiddenStrings []string = []string{
 	`</embed>`,
 }
 
-func AvoidNormalHtmlTag(vg ValueGetter, name string, message string) Validator {
+func AvoidScriptTag(vg ValueGetter, name string, message string) Validator {
 	return Custom(func(object interface{}) bool {
 		value := vg(object).(string)
 		for _, str := range forbiddenStrings {
@@ -88,13 +88,7 @@ func AvoidNormalHtmlTag(vg ValueGetter, name string, message string) Validator {
 				return false
 			}
 		}
-		return true
-	}, name, message)
-}
 
-func AvoidScriptTag(vg ValueGetter, name string, message string) Validator {
-	return Custom(func(object interface{}) bool {
-		value := vg(object).(string)
 		htmlTagRegexp := regexp.MustCompile(`(<[^<>]+>)`)
 		match := htmlTagRegexp.MatchString(value)
 		return !match
