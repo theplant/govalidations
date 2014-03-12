@@ -66,18 +66,36 @@ func Prohibition(vg ValueGetter, min int, max int, name string, message string) 
 }
 
 var forbiddenStrings []string = []string{
-	`<script>`,
 	`<script`,
 	`</script>`,
-	`<style>`,
 	`<style`,
 	`</style>`,
-	`<img>`,
 	`<img`,
 	`</img>`,
-	`<embed>`,
 	`<embed`,
 	`</embed>`,
+	`<object`,
+	`</object>`,
+	`<video`,
+	`</video>`,
+	`<audio`,
+	`</audio>`,
+	`<source`,
+	`</source>`,
+	`<track`,
+	`</track>`,
+	`<iframe`,
+	`</iframe>`,
+	`<frame`,
+	`</frame>`,
+	`<input`,
+	`</input>`,
+	`<base`,
+	`</base>`,
+	`<applet`,
+	`</applet>`,
+	`<link`,
+	`</link>`,
 }
 
 func AvoidScriptTag(vg ValueGetter, name string, message string) Validator {
@@ -89,7 +107,7 @@ func AvoidScriptTag(vg ValueGetter, name string, message string) Validator {
 			}
 		}
 
-		htmlTagRegexp := regexp.MustCompile(`(<[^<>]+>)`)
+		htmlTagRegexp := regexp.MustCompile(`<\/?\w+[^>]*>`)
 		match := htmlTagRegexp.MatchString(value)
 		return !match
 	}, name, message)
