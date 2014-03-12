@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"github.com/sunfmin/govalidations"
+	"github.com/theplant/govalidations"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -50,17 +50,17 @@ func UserGateKeeper() (gk *govalidations.GateKeeper) {
 		return object.(*User).Username
 	}, "Username", "Username can not be blank"))
 
+	gk.Add(govalidations.AvoidScriptTag(func(object interface{}) interface{} {
+		return object.(*User).Username
+	}, "Username", "Username can not contains html script tag"))
+
 	gk.Add(govalidations.Limitation(func(object interface{}) interface{} {
 		return object.(*User).Username
-	}, 0, 10, "Username", "Username can not be too long"))
+	}, 0, 50, "Username", "Username can not be too long"))
 
 	gk.Add(govalidations.Prohibition(func(object interface{}) interface{} {
 		return object.(*User).Username
 	}, 10, 20, "Username", "Username must less than 10 or more than 20"))
-
-	gk.Add(govalidations.AvoidScriptTag(func(object interface{}) interface{} {
-		return object.(*User).Username
-	}, "Username", "Username can contains html script tag"))
 
 	gk.Add(govalidations.Custom(func(object interface{}) bool {
 		age := object.(*User).Age
@@ -107,7 +107,7 @@ func aMux() (sm *http.ServeMux) {
 
 	sm.HandleFunc("/validate", func(w http.ResponseWriter, r *http.Request) {
 		u := &User{
-			Username: "i like to move it move it",
+			Username: "i like to move it move it and move it move it move it move it move it move it move it",
 			Email:    "kiss@therain.com",
 		}
 
@@ -160,8 +160,7 @@ func kioshiMux() (sm *http.ServeMux) {
 	})
 	return
 }
-
-func avoidScriptTagMux() (sm *http.ServeMux) {
+func avoidScriptTagMux1() (sm *http.ServeMux) {
 	sm = http.NewServeMux()
 
 	tpl := template.Must(template.ParseGlob("validate.html"))
@@ -172,6 +171,81 @@ func avoidScriptTagMux() (sm *http.ServeMux) {
 		u := &User{
 			Username: `<script>alert("x")<\script>`,
 			Email:    "kiss@therain.com",
+		}
+
+		vd := gk.Validate(u)
+		if vd.HasError() {
+			tpl.Execute(w, vd)
+			return
+		}
+
+		fmt.Fprintln(w, "Yeah!")
+	})
+
+	return
+}
+
+func avoidScriptTagMux2() (sm *http.ServeMux) {
+	sm = http.NewServeMux()
+	tpl := template.Must(template.ParseGlob("validate.html"))
+	gk := UserGateKeeper()
+	sm.HandleFunc("/validate", func(w http.ResponseWriter, r *http.Request) {
+		u := &User{
+			Username: `<img src="#" onerror="alert(42)">`,
+			Email:    "kiss@therain.com",
+			//Age:      19,
+		}
+
+		vd := gk.Validate(u)
+		if vd.HasError() {
+			tpl.Execute(w, vd)
+			return
+		}
+
+		fmt.Fprintln(w, "Yeah!")
+	})
+
+	return
+}
+
+func avoidScriptTagMux3() (sm *http.ServeMux) {
+	sm = http.NewServeMux()
+
+	tpl := template.Must(template.ParseGlob("validate.html"))
+
+	gk := UserGateKeeper()
+
+	sm.HandleFunc("/validate", func(w http.ResponseWriter, r *http.Request) {
+		u := &User{
+			Username: `<embed>alert("x")<\embed>`,
+			Email:    "kiss@therain.com",
+			Age:      19,
+		}
+
+		vd := gk.Validate(u)
+		if vd.HasError() {
+			tpl.Execute(w, vd)
+			return
+		}
+
+		fmt.Fprintln(w, "Yeah!")
+	})
+
+	return
+}
+
+func avoidScriptTagMux4() (sm *http.ServeMux) {
+	sm = http.NewServeMux()
+
+	tpl := template.Must(template.ParseGlob("validate.html"))
+
+	gk := UserGateKeeper()
+
+	sm.HandleFunc("/validate", func(w http.ResponseWriter, r *http.Request) {
+		u := &User{
+			Username: `<style>alert("x")<\style>`,
+			Email:    "kiss@therain.com",
+			Age:      19,
 		}
 
 		vd := gk.Validate(u)
@@ -244,14 +318,37 @@ func TestRenderLimitationErrors(t *testing.T) {
 }
 
 func TestRenderAvoidScriptTagErrors(t *testing.T) {
-	ts := httptest.NewServer(avoidScriptTagMux())
+	ts := httptest.NewServer(avoidScriptTagMux1())
 	defer ts.Close()
 
 	r, _ := http.Get(ts.URL + "/validate")
-
 	b, _ := ioutil.ReadAll(r.Body)
 	body := string(b)
-	if !strings.Contains(body, "Username can contains html script tag") {
+	if !strings.Contains(body, "Username can not contains html script tag") {
+		t.Error(body)
+	}
+
+	ts = httptest.NewServer(avoidScriptTagMux2())
+	r, _ = http.Get(ts.URL + "/validate")
+	b, _ = ioutil.ReadAll(r.Body)
+	body = string(b)
+	if !strings.Contains(body, "Username can not contains html script tag") {
+		t.Error(body)
+	}
+
+	ts = httptest.NewServer(avoidScriptTagMux3())
+	r, _ = http.Get(ts.URL + "/validate")
+	b, _ = ioutil.ReadAll(r.Body)
+	body = string(b)
+	if !strings.Contains(body, "Username can not contains html script tag") {
+		t.Error(body)
+	}
+
+	ts = httptest.NewServer(avoidScriptTagMux4())
+	r, _ = http.Get(ts.URL + "/validate")
+	b, _ = ioutil.ReadAll(r.Body)
+	body = string(b)
+	if !strings.Contains(body, "Username can not contains html script tag") {
 		t.Error(body)
 	}
 }
