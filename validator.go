@@ -47,7 +47,7 @@ func Regexp(vg ValueGetter, matcher *regexp.Regexp, name string, message string)
 func Presence(vg ValueGetter, name string, message string) Validator {
 	return Custom(func(object interface{}) bool {
 		value := vg(object).(string)
-		return strings.Trim(value, " 　") != ""
+		return strings.TrimSpace(value) != ""
 	}, name, message)
 }
 
@@ -100,7 +100,11 @@ var forbiddenStrings []string = []string{
 
 func AvoidScriptTag(vg ValueGetter, name string, message string) Validator {
 	return Custom(func(object interface{}) bool {
-		value := vg(object).(string)
+		value := strings.TrimSpace(vg(object).(string))
+		if value == "" {
+			return true
+		}
+
 		for _, str := range forbiddenStrings {
 			if strings.Contains(strings.ToLower(value), str) {
 				return false
