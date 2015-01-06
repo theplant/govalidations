@@ -37,6 +37,21 @@ func Custom(vd func(object interface{}) bool, name string, message string) Valid
 	}
 }
 
+func DynamicMessage(vd func(object interface{}) (b bool, name string, message string)) Validator {
+	return func(object interface{}) (r []*Error) {
+		b, n, m := vd(object)
+		if b {
+			return
+		}
+
+		r = append(r, &Error{
+			Name:    n,
+			Message: m,
+		})
+		return
+	}
+}
+
 func Regexp(vg ValueGetter, matcher *regexp.Regexp, name string, message string) Validator {
 	return Custom(func(object interface{}) bool {
 		value := vg(object).(string)
